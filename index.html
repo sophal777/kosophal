@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>HTML Elements Table</title>
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <meta name="google-signin-client_id" content="193839356547-hea237aeppf5agr570qjk1f87obhemci.apps.googleusercontent.com">
+</head>
+<body>
+    <div class="header">HTML Elements Table</div>
+    <h2>Description of HTML Elements</h2>
+    <button onclick="addRow()">Add Row</button>
+    <button onclick="deleteSelectedRow()">Delete Selected Row</button>
+    <button onclick="selectAll()">Select All</button>
+    <button onclick="goBack()">Go Back</button>
+    <button onclick="goForward()">Go Forward</button>
+    <div class="g-signin2" data-onsuccess="onSignIn"></div>
+
+    <table id="htmlTable">
+        <tr>
+            <th>Select</th>
+            <th>Number</th>
+            <th>Element Name</th>
+            <th>Syntax</th>
+            <th>Usage</th>
+            <th>Website</th>
+            <th>Edit</th>
+        </tr>
+        <tr>
+            <td><input type="checkbox"></td>
+            <td>1</td>
+            <td contenteditable="true">HTML</td>
+            <td contenteditable="true">&lt;html&gt;...&lt;/html&gt;</td>
+            <td contenteditable="true">Root Element</td>
+            <td>
+                <input type="text" id="newWebsite1" placeholder="Enter Website URL">
+                <button onclick="addWebsite(1)">Add</button>
+                <button onclick="deleteWebsite(1)">Delete</button>
+                <select id="dropdown1" onchange="goToWebsite(this)">
+                    <option value="">Select Website</option>
+                    <option value="https://developer.mozilla.org/en-US">MDN</option>
+                    <option value="https://www.w3schools.com">W3Schools</option>
+                </select>
+            </td>
+            <td><button onclick="toggleEdit(this)">Edit</button></td>
+        </tr>
+    </table>
+
+    <script>
+        let historyStack = [];
+        let forwardStack = [];
+
+        function goToWebsite(select) {
+            var url = select.value;
+            if (url) {
+                window.open(url, '_blank');
+            }
+        }
+
+        function addWebsite(rowNumber) {
+            var inputId = "newWebsite" + rowNumber;
+            var dropdownId = "dropdown" + rowNumber;
+            var url = document.getElementById(inputId).value;
+
+            if (url) {
+                var select = document.getElementById(dropdownId);
+                var option = document.createElement("option");
+                option.text = url;
+                option.value = url;
+                select.appendChild(option);
+                document.getElementById(inputId).value = "";
+                recordHistory();
+            } else {
+                alert("Please enter a URL!");
+            }
+        }
+
+        function deleteWebsite(rowNumber) {
+            var dropdownId = "dropdown" + rowNumber;
+            var select = document.getElementById(dropdownId);
+            var selectedOption = select.options[select.selectedIndex];
+
+            if (selectedOption.value) {
+                select.remove(select.selectedIndex);
+                recordHistory();
+            } else {
+                alert("Please select a website to delete!");
+            }
+        }
+
+        function addRow() {
+            var table = document.getElementById("htmlTable");
+            var rowCount = table.rows.length;
+            var row = table.insertRow(rowCount);
+            row.innerHTML = `
+                <td><input type="checkbox"></td>
+                <td>${rowCount}</td>
+                <td contenteditable="true">New Element</td>
+                <td contenteditable="true">&lt;tag&gt;...&lt;/tag&gt;</td>
+                <td contenteditable="true">Description</td>
+                <td>
+                    <input type="text" id="newWebsite${rowCount}" placeholder="Enter Website URL">
+                    <button onclick="addWebsite(${rowCount})">Add</button>
+                    <button onclick="deleteWebsite(${rowCount})">Delete</button>
+                    <select id="dropdown${rowCount}" onchange="goToWebsite(this)">
+                        <option value="">Select Website</option>
+                    </select>
+                </td>
+                <td><button onclick="toggleEdit(this)">Edit</button></td>
+            `;
+            highlightRow(row);
+            recordHistory();
+        }
+
+        function deleteSelectedRow() {
+            var table = document.getElementById("htmlTable");
+            var checkboxes = table.querySelectorAll("input[type='checkbox']");
+            for (var i = checkboxes.length - 1; i >= 0; i--) {
+                if (checkboxes[i].checked) {
+                    table.deleteRow(i + 1);
+                }
+            }
+            updateRowNumbers();
+            recordHistory();
+        }
+
+        function selectAll() {
+            var checkboxes = document.querySelectorAll("input[type='checkbox']");
+            checkboxes.forEach(cb => cb.checked = true);
+        }
+
+        function toggleEdit(button) {
+            var row = button.parentElement.parentElement;
+            var cells = row.cells;
+            var isEditing = cells[2].contentEditable === "true";
+
+            if (isEditing) {
+                // If already editable, disable editing
+                cells[2].contentEditable = "false";
+                cells[3].contentEditable = "false";
+                cells[4].contentEditable = "false";
+                button.innerText = "Edit"; // Change button text back to "Edit"
+            } else {
+                // If not editable, enable editing
+                cells[2].contentEditable = "true";
+                cells[3].contentEditable = "true";
+                cells[4].contentEditable = "true";
+                button.innerText = "Save"; // Change button text to "Save"
+            }
+
+            highlightRow(row);
+            recordHistory();
+        }
+
+        function updateRowNumbers() {
+            var table = document.getElementById("htmlTable");
+            for (var i = 1; i < table.rows.length; i++) {
+                table.rows[i].cells[1].innerText = i;
+            }
+        }
+
+        function highlightRow(row) {
+            row.classList.add("highlight");
+            setTimeout(() => {
+                row.classList.remove("highlight");
+            }, 5000);
+        }
+
+        function recordHistory() {
+            var table = document.getElementById("htmlTable");
+            var tableState = table.innerHTML;
+            historyStack.push(tableState);
+            forwardStack = [];
+        }
+
+        function goBack() {
+            if (historyStack.length > 1) {
+                forwardStack.push(historyStack.pop());
+                document.getElementById("htmlTable").innerHTML = historyStack[historyStack.length - 1];
+            } else {
+                alert("No more previous history.");
+            }
+        }
+
+        function goForward() {
+            if (forwardStack.length > 0) {
+                var forwardState = forwardStack.pop();
+                historyStack.push(forwardState);
+                document.getElementById("htmlTable").innerHTML = forwardState;
+            } else {
+                alert("No more forward history.");
+            }
+        }
+
+        function onSignIn(googleUser) {
+            var id_token = googleUser.getAuthResponse().id_token;
+
+            // Send the id_token to your server for verification
+            fetch('/verify-token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id_token: id_token })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('User authenticated:', data);
+            })
+            .catch(error => {
+                console.error('Error during authentication:', error);
+            });
+        }
+    </script>
+
+</body>
+</html>
